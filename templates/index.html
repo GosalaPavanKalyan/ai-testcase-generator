@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Test Case Generator</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", sans-serif;
+            background-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 30px;
+            background: #111827;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+        }
+
+        h2 {
+            text-align: center;
+            color: #14b8a6;
+        }
+
+        .form-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: #14b8a6;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            text-align: center;
+            margin-top: 20px;
+            color: #14b8a6;
+            font-weight: bold;
+        }
+
+        .joke {
+            margin-top: 10px;
+            font-style: italic;
+            color: #fbbf24;
+        }
+
+        .results {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            border-top: 1px solid #374151;
+            padding-top: 15px;
+        }
+
+        .testcase {
+            background: #1f2937;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #14b8a6;
+        }
+
+        .testcase h3 {
+            margin-top: 0;
+            color: #22d3ee;
+        }
+
+        ol {
+            padding-left: 20px;
+        }
+
+        .success-message {
+            color: #22c55e;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .collapsible-header {
+    cursor: pointer;
+    padding: 10px;
+    background-color: #1f2937;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .collapsible-header:hover {
+        background-color: #273549;
+    }
+
+    .collapsible-content {
+        display: none;
+        margin-top: 10px;
+    }
+
+    .toggle-icon {
+        font-size: 18px;
+    }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h2>AI Test Case Generator</h2>
+
+    <div class="form-section">
+        <form method="POST" id="testForm">
+            <input type="text"
+                   id="ticketInput"
+                   name="ticket_id"
+                   value="{{ ticket_id or '' }}"
+                   placeholder="Enter Ticket ID (e.g. SCRUM-29)"
+                   required>
+
+            <button type="submit"
+                    id="generateBtn"
+                    {% if cases %}disabled{% endif %}>
+                Generate
+            </button>
+        </form>
+    </div>
+
+    <!-- Loader + Joke -->
+    <div class="loader" id="loaderSection" style="display:none;">
+        Test cases are generating, please wait...
+        <div class="joke" id="jokeBox"></div>
+    </div>
+
+    <!-- Results -->
+    {% if cases %}
+<div class="results" id="resultsSection">
+
+    <div class="success-message">
+        Test cases are generated and attached to ticket {{ ticket_id }} successfully.
+    </div>
+
+    <div>
+        Ticket ID: <b>{{ ticket_id }}</b> |
+        Total Test Cases: <b>{{ cases|length }}</b>
+    </div>
+
+    <hr style="margin:20px 0; border-color:#374151;">
+
+    <!-- STORY DETAILS -->
+    <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleSection('storyContent', this)">
+            <span class="toggle-icon">➕</span>
+            <strong>Story Details</strong>
+        </div>
+
+        <div class="collapsible-content" id="storyContent">
+            <h4>Summary:</h4>
+<p>{{ story_summary }}</p>
+
+<h4>Description:</h4>
+<p>{{ story_description }}</p>
+        </div>
+    </div>
+
+    <hr style="margin:20px 0; border-color:#374151;">
+
+    <!-- TEST CASE DETAILS -->
+    <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleSection('testcaseContent', this)">
+            <span class="toggle-icon">➕</span>
+            <strong>Test Case Details</strong>
+        </div>
+
+        <div class="collapsible-content" id="testcaseContent">
+
+            {% for case in cases %}
+            <div class="testcase">
+                <h3>{{ case.get('title', 'No Title') }}</h3>
+
+                <p><b>Description:</b><br>
+                    {{ case.get('description', 'N/A') }}
+                </p>
+
+                <p><b>Precondition:</b><br>
+                    {{ case.get('precondition', 'N/A') }}
+                </p>
+
+                {% if case.get('steps') %}
+                <b>Steps:</b>
+                <ol>
+                    {% for step in case.get('steps') %}
+                    <li>
+                        <b>Step:</b> {{ step.get('step','') }} <br>
+                        <b>Data:</b> {{ step.get('data','') }} <br>
+                        <b>Expected:</b> {{ step.get('expectedResult','') }}
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+<script>
+    const jokes = [
+        "Why do QA engineers hate nature? Too many bugs.",
+        "A QA engineer walks into a bar. Orders 1 beer, 0 beers, -1 beers.",
+        "It works on my machine – Developer.",
+        "QA: Trust but verify.",
+        "Found a bug? That's not a bug, that's a feature!",
+        "99 bugs in the code, fix one… 117 bugs in the code.",
+        "QA doesn’t break software. It finds broken dreams.",
+        "Automation can’t replace QA. It just finds bugs faster.",
+        "Developers make it. QA makes it better.",
+        "No software is bug-free. Just less buggy.",
+        "QA: Professional overthinker.",
+        "If debugging is removing bugs, programming must be putting them in.",
+        "Behind every great developer is a QA rolling eyes.",
+        "QA — Because developers need supervision.",
+        "One does not simply deploy to production without QA.",
+        "QA: Saving production since forever.",
+        "Without QA, it’s just guesswork.",
+        "QA doesn’t test code, it tests patience.",
+        "Test early. Test often. Sleep peacefully.",
+        "QA is the last line of defense."
+    ];
+
+    const form = document.getElementById("testForm");
+    const input = document.getElementById("ticketInput");
+    const button = document.getElementById("generateBtn");
+    const loader = document.getElementById("loaderSection");
+    const jokeBox = document.getElementById("jokeBox");
+
+    // Enable button only when typing new value
+    input.addEventListener("input", function () {
+        if (input.value.trim() !== "") {
+            button.disabled = false;
+        } else {
+            button.disabled = true;
+        }
+    });
+
+    form.addEventListener("submit", function () {
+
+        // Disable immediately after click
+        button.disabled = true;
+
+        // Remove old results instantly
+        const oldResults = document.getElementById("resultsSection");
+        if (oldResults) {
+            oldResults.remove();
+        }
+
+        // Show loader
+        loader.style.display = "block";
+
+        // Show one random joke
+        const randomIndex = Math.floor(Math.random() * jokes.length);
+        jokeBox.innerText = jokes[randomIndex];
+    });
+
+    // Hide loader after page reload
+    window.onload = function () {
+        const results = document.getElementById("resultsSection");
+        if (results) {
+            loader.style.display = "none";
+        }
+    };
+    function toggleSection(id, element) {
+    const content = document.getElementById(id);
+    const icon = element.querySelector(".toggle-icon");
+
+    if (content.style.display === "block") {
+        content.style.display = "none";
+        icon.textContent = "➕";
+    } else {
+        content.style.display = "block";
+        icon.textContent = "➖";
+    }
+}
+</script>
+
+</body>
+</html>
