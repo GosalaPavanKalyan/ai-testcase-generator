@@ -12,35 +12,25 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 40px auto;
             padding: 30px;
             background: #111827;
             border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.6);
         }
 
-        h2 {
-            text-align: center;
-            color: #14b8a6;
-        }
-
-        .form-section {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        h2 { text-align: center; color: #14b8a6; }
 
         input {
             padding: 10px;
-            width: 300px;
+            width: 350px;
             border-radius: 5px;
             border: none;
-            outline: none;
         }
 
         button {
-            padding: 10px 20px;
-            margin-left: 10px;
+            padding: 8px 16px;
+            margin: 5px;
             border-radius: 5px;
             border: none;
             background-color: #14b8a6;
@@ -48,260 +38,250 @@
             cursor: pointer;
         }
 
-        button:disabled {
-            background-color: #6b7280;
-            cursor: not-allowed;
+        .danger { background-color: #ef4444; }
+        .secondary { background-color: #3b82f6; }
+        .approve-btn {
+            background-color: #22c55e;
+            display: block;
+            margin: 20px auto;
         }
 
-        .loader {
-            text-align: center;
-            margin-top: 20px;
-            color: #14b8a6;
-            font-weight: bold;
+        .collapsible-header {
+            cursor: pointer;
+            padding: 10px;
+            background-color: #1f2937;
+            margin-top: 15px;
         }
 
-        .joke {
-            margin-top: 10px;
-            font-style: italic;
-            color: #fbbf24;
-        }
-
-        .results {
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-            border-top: 1px solid #374151;
-            padding-top: 15px;
-        }
+        .collapsible-content { display: none; padding: 10px; }
 
         .testcase {
             background: #1f2937;
             padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 6px;
+            margin-bottom: 10px;
             border-left: 4px solid #14b8a6;
         }
 
-        .testcase h3 {
-            margin-top: 0;
-            color: #22d3ee;
+        textarea {
+            width: 100%;
+            background: #111827;
+            color: white;
+            border: 1px solid #374151;
+            display: none;
         }
 
-        ol {
-            padding-left: 20px;
+        .loader-overlay{
+            position: fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background: rgba(0,0,0,0.85);
+            display:none;
+            align-items:center;
+            justify-content:center;
         }
-
-        .success-message {
-            color: #22c55e;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .collapsible-header {
-    cursor: pointer;
-    padding: 10px;
-    background-color: #1f2937;
-    border-radius: 6px;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-    .collapsible-header:hover {
-        background-color: #273549;
-    }
-
-    .collapsible-content {
-        display: none;
-        margin-top: 10px;
-    }
-
-    .toggle-icon {
-        font-size: 18px;
-    }
     </style>
 </head>
-<body>
 
+<body>
 <div class="container">
 
-    <h2>AI Test Case Generator</h2>
+<h2>🤖 AI Test Case Generator</h2>
 
-    <div class="form-section">
-        <form method="POST" id="testForm">
-            <input type="text"
-                   id="ticketInput"
-                   name="ticket_id"
-                   value="{{ ticket_id or '' }}"
-                   placeholder="Enter Ticket ID (e.g. SCRUM-29)"
-                   required>
+<div id="statusMessage"></div>
 
-            <button type="submit"
-                    id="generateBtn"
-                    {% if cases %}disabled{% endif %}>
-                Generate
-            </button>
-        </form>
-    </div>
+<form method="POST" id="testForm">
+    <input type="text" id="ticketInput" name="ticket_id"
+           value="{{ ticket_id or '' }}" required>
+    <button id="generateBtn" disabled>Generate</button>
+</form>
 
-    <!-- Loader + Joke -->
-    <div class="loader" id="loaderSection" style="display:none;">
-        Test cases are generating, please wait...
-        <div class="joke" id="jokeBox"></div>
-    </div>
+{% if message %}
+<div>{{ message }}</div>
+{% endif %}
 
-    <!-- Results -->
-    {% if cases %}
-<div class="results" id="resultsSection">
+<!-- Ticket -->
+{% if ticket_data %}
+<div class="collapsible-header" onclick="toggleSection('ticket')">Ticket</div>
+<div id="ticket" class="collapsible-content">
+<pre>{{ ticket_data }}</pre>
+</div>
+{% endif %}
 
-    <div class="success-message">
-        Test cases are generated and attached to ticket {{ ticket_id }} successfully.
-    </div>
+<!-- Existing -->
+{% if cases %}
+<div class="collapsible-header" onclick="toggleSection('existing')">
+Existing ({{ existing_cases|length }})
+</div>
 
-    <div>
-        Ticket ID: <b>{{ ticket_id }}</b> |
-        Total Test Cases: <b>{{ cases|length }}</b>
-    </div>
+<div id="existing" class="collapsible-content">
 
-    <hr style="margin:20px 0; border-color:#374151;">
-
-    <!-- STORY DETAILS -->
-    <div class="collapsible">
-        <div class="collapsible-header" onclick="toggleSection('storyContent', this)">
-            <span class="toggle-icon">➕</span>
-            <strong>Story Details</strong>
-        </div>
-
-        <div class="collapsible-content" id="storyContent">
-            <h4>Summary:</h4>
-<p>{{ story_summary }}</p>
-
-<h4>Description:</h4>
-<p>{{ story_description }}</p>
-        </div>
-    </div>
-
-    <hr style="margin:20px 0; border-color:#374151;">
-
-    <!-- TEST CASE DETAILS -->
-    <div class="collapsible">
-        <div class="collapsible-header" onclick="toggleSection('testcaseContent', this)">
-            <span class="toggle-icon">➕</span>
-            <strong>Test Case Details</strong>
-        </div>
-
-        <div class="collapsible-content" id="testcaseContent">
-
-            {% for case in cases %}
-            <div class="testcase">
-                <h3>{{ case.get('title', 'No Title') }}</h3>
-
-                <p><b>Description:</b><br>
-                    {{ case.get('description', 'N/A') }}
-                </p>
-
-                <p><b>Precondition:</b><br>
-                    {{ case.get('precondition', 'N/A') }}
-                </p>
-
-                {% if case.get('steps') %}
-                <b>Steps:</b>
-                <ol>
-                    {% for step in case.get('steps') %}
-                    <li>
-                        <b>Step:</b> {{ step.get('step','') }} <br>
-                        <b>Data:</b> {{ step.get('data','') }} <br>
-                        <b>Expected:</b> {{ step.get('expectedResult','') }}
-                    </li>
-                    {% endfor %}
-                </ol>
-                {% endif %}
-            </div>
-            {% endfor %}
-
-        </div>
-    </div>
+{% for tc in existing_cases %}
+<div class="testcase">
+<h3>{{ tc.title }}</h3>
+<p>{{ tc.description }}</p>
+</div>
+{% endfor %}
 
 </div>
 {% endif %}
 
+<!-- Generated -->
+{% if cases %}
+<div class="collapsible-header" onclick="toggleSection('cases')">
+Generated ({{ cases|length }})
+</div>
+
+<div id="cases" class="collapsible-content">
+
+<div id="testcaseContainer">
+
+{% for case in cases %}
+<div class="testcase">
+
+<h3 class="view-title">{{ case.title }}</h3>
+<textarea class="edit-title">{{ case.title }}</textarea>
+
+<p class="view-desc"><b>Description:</b><br>{{ case.description }}</p>
+<textarea class="edit-desc">{{ case.description }}</textarea>
+
+<ol class="view-steps">
+{% for step in case.steps %}
+<li>{{ step }}</li>
+{% endfor %}
+</ol>
+
+<textarea class="edit-steps">
+{% for step in case.steps %}
+{{ step }}
+{% endfor %}
+</textarea>
+
+<button onclick="edit(this)">Edit</button>
+<button onclick="update(this)" style="display:none;">Update</button>
+<button class="danger" onclick="removeCase(this)">Delete</button>
+<button onclick="approveSingle(this)">Approve</button>
+
+</div>
+{% endfor %}
+
+</div>
+
+<button class="approve-btn" onclick="approveAll()">Approve All</button>
+
+</div>
+{% endif %}
+
+</div>
+
 <script>
-    const jokes = [
-        "Why do QA engineers hate nature? Too many bugs.",
-        "A QA engineer walks into a bar. Orders 1 beer, 0 beers, -1 beers.",
-        "It works on my machine – Developer.",
-        "QA: Trust but verify.",
-        "Found a bug? That's not a bug, that's a feature!",
-        "99 bugs in the code, fix one… 117 bugs in the code.",
-        "QA doesn’t break software. It finds broken dreams.",
-        "Automation can’t replace QA. It just finds bugs faster.",
-        "Developers make it. QA makes it better.",
-        "No software is bug-free. Just less buggy.",
-        "QA: Professional overthinker.",
-        "If debugging is removing bugs, programming must be putting them in.",
-        "Behind every great developer is a QA rolling eyes.",
-        "QA — Because developers need supervision.",
-        "One does not simply deploy to production without QA.",
-        "QA: Saving production since forever.",
-        "Without QA, it’s just guesswork.",
-        "QA doesn’t test code, it tests patience.",
-        "Test early. Test often. Sleep peacefully.",
-        "QA is the last line of defense."
-    ];
 
-    const form = document.getElementById("testForm");
-    const input = document.getElementById("ticketInput");
-    const button = document.getElementById("generateBtn");
-    const loader = document.getElementById("loaderSection");
-    const jokeBox = document.getElementById("jokeBox");
-
-    // Enable button only when typing new value
-    input.addEventListener("input", function () {
-        if (input.value.trim() !== "") {
-            button.disabled = false;
-        } else {
-            button.disabled = true;
-        }
-    });
-
-    form.addEventListener("submit", function () {
-
-        // Disable immediately after click
-        button.disabled = true;
-
-        // Remove old results instantly
-        const oldResults = document.getElementById("resultsSection");
-        if (oldResults) {
-            oldResults.remove();
-        }
-
-        // Show loader
-        loader.style.display = "block";
-
-        // Show one random joke
-        const randomIndex = Math.floor(Math.random() * jokes.length);
-        jokeBox.innerText = jokes[randomIndex];
-    });
-
-    // Hide loader after page reload
-    window.onload = function () {
-        const results = document.getElementById("resultsSection");
-        if (results) {
-            loader.style.display = "none";
-        }
-    };
-    function toggleSection(id, element) {
-    const content = document.getElementById(id);
-    const icon = element.querySelector(".toggle-icon");
-
-    if (content.style.display === "block") {
-        content.style.display = "none";
-        icon.textContent = "➕";
-    } else {
-        content.style.display = "block";
-        icon.textContent = "➖";
-    }
+function toggleSection(id){
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === "block" ? "none" : "block";
 }
+
+function edit(btn){
+    const card = btn.closest(".testcase");
+
+    card.querySelector(".view-title").style.display="none";
+    card.querySelector(".edit-title").style.display="block";
+
+    card.querySelector(".view-desc").style.display="none";
+    card.querySelector(".edit-desc").style.display="block";
+
+    card.querySelector(".view-steps").style.display="none";
+    card.querySelector(".edit-steps").style.display="block";
+
+    btn.style.display="none";
+    btn.nextElementSibling.style.display="inline-block";
+}
+
+function update(btn){
+    const card = btn.closest(".testcase");
+
+    const title = card.querySelector(".edit-title").value;
+    const desc = card.querySelector(".edit-desc").value;
+    const steps = card.querySelector(".edit-steps").value.split("\n");
+
+    card.querySelector(".view-title").innerText=title;
+    card.querySelector(".view-desc").innerHTML="<b>Description:</b><br>"+desc;
+
+    const list = card.querySelector(".view-steps");
+    list.innerHTML="";
+    steps.forEach(s=>{
+        if(s.trim()){
+            const li=document.createElement("li");
+            li.innerText=s;
+            list.appendChild(li);
+        }
+    });
+
+    card.querySelectorAll("textarea").forEach(t=>t.style.display="none");
+    card.querySelectorAll(".view-title,.view-desc,.view-steps")
+        .forEach(v=>v.style.display="block");
+
+    btn.style.display="none";
+    card.querySelector("button").style.display="inline-block";
+}
+
+function removeCase(btn){
+    btn.closest(".testcase").remove();
+}
+
+function collectCases(){
+    let cases=[];
+    document.querySelectorAll(".testcase").forEach(card=>{
+        const title = card.querySelector(".view-title").innerText;
+        const desc = card.querySelector(".view-desc").innerText.replace("Description:","");
+        let steps=[];
+        card.querySelectorAll("li").forEach(li=>steps.push(li.innerText));
+        cases.push({title:title,description:desc,precondition:"",steps:steps});
+    });
+    return cases;
+}
+
+function approveAll(){
+    sendApproval(collectCases());
+}
+
+function approveSingle(btn){
+    const card = btn.closest(".testcase");
+
+    const title = card.querySelector(".view-title").innerText;
+    const desc = card.querySelector(".view-desc").innerText.replace("Description:","");
+    let steps=[];
+    card.querySelectorAll("li").forEach(li=>steps.push(li.innerText));
+
+    sendApproval([{title,description:desc,precondition:"",steps}]);
+
+    card.remove();
+}
+
+function sendApproval(cases){
+
+    fetch("/approve",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            ticket_id:document.getElementById("ticketInput").value,
+            cases:cases
+        })
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        document.getElementById("statusMessage").innerText=data.message;
+    });
+}
+
+const input=document.getElementById("ticketInput");
+const btn=document.getElementById("generateBtn");
+
+input.addEventListener("input",()=>{
+    btn.disabled = input.value.trim()==="";
+});
+
 </script>
 
 </body>
